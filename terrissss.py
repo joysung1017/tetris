@@ -3,7 +3,7 @@ import random
 
 pygame.init()
 
-width = 800
+width = 700
 height = 900
 blockSize = 30
 
