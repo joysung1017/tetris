@@ -140,27 +140,27 @@ def draw_grid(window, grid):
 # homework: create lines for the columns
 # hint: copy and paste above code and then change the number inside the for loop
 def draw_shape(piece):
-    print(piece)
-    #TODO: get shape from piece
+
+    #TODO: get the shape from piece
     shape = piece.shape
-    print(shape)
+
+    #TODO: get the rotation from piece
     rotation = piece.rotation
-    print(rotation)
-    format = shape[rotation%len(shape)]
+
+    format = shape[rotation % len(shape)]
 
     positions = []
+    #['.....', '.....', '..00.', '.00..', '.....']
     for i in range(len(format)):
         row = list(format[i])
-        print(row)
-        for j in range(len(row)):
-            if(row[j] == "0"):
-                print("Hello")
-                positions.append((piece.x + j, piece.y + i))
 
-    for i, pos in enumerate(positions):
+        for j in range(len(row)):
+            if( row[j] == "0"):
+                positions.append((piece.x + j, piece.y + i))
+            #TODO: compare if it equals "0" if it is print("HELLO)
+            # ['.', '0', '.', '.', '.']
+    for i , pos in enumerate(positions):
         positions[i] = (pos[0] - 2, pos[1] - 4)
-        #compare if it equals "0" if it is print ("Hello")
-        #['.', '0', '.', '.', '.']
     return positions
 # In the main function, change the offsets for the grid and "Next
 # In the main function, change the offsets for the grid and "Next Shape" text
@@ -251,13 +251,11 @@ def valid_space(shape, grid):
 
     return True
 
-
 def main(window):
     locked_positions = {}
     grid = create_grid(locked_positions)
     current_shape = get_piece()
     next_shape = get_piece()
-
 
     clock = pygame.time.Clock()
     fall_time = 0
@@ -270,26 +268,27 @@ def main(window):
         fall_time += clock.get_rawtime()
         level_time += clock.get_rawtime()
         clock.tick()
+
         if level_time / 1000 > 5:
             level_time = 0
-
-            if level_time > 0.12:
-                level_time -= 0.005
+            if fall_speed > 0.12:
+                fall_speed -= 0.005
 
         if fall_time / 1000 > fall_speed:
             fall_time = 0
             current_shape.y += 1
-
-            if not valid_space(current_shape, grid):
+        
+            if not valid_space(current_shape, grid) and current_shape.y > 0:
                 current_shape.y -= 1
                 for pos in draw_shape(current_shape):
-                    p = (pos[0], pos[1])
-                    locked_positions[p] = current_shape.color
-                    current_shape = next_shape
-                    next_shape = get_piece()
-                    break
-
+                    x, y = pos
+                    if y > -1:
+                        locked_positions[pos] = current_shape.color
+                current_shape = next_shape
+                next_shape = get_piece()
         grid = clear_rows(grid, locked_positions)
+
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -298,39 +297,30 @@ def main(window):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
                     current_shape.y += 1
-                    if not(valid_space(current_shape,grid)):
+                    if not valid_space(current_shape, grid):
                         current_shape.y -= 1
                 if event.key == pygame.K_UP:
                     current_shape.rotation += 1
-                    if not (valid_space(current_shape,grid)):
+                    if not valid_space(current_shape, grid):
                         current_shape.rotation -= 1
                 if event.key == pygame.K_LEFT:
                     current_shape.x -= 1
-                    if not(valid_space(current_shape,grid)):
+                    if not valid_space(current_shape, grid):
                         current_shape.x += 1
                 if event.key == pygame.K_RIGHT:
                     current_shape.x += 1
-                    if not(valid_space(current_shape,grid)):
+                    if not valid_space(current_shape, grid):
                         current_shape.x -= 1
+
         current_piece_position = draw_shape(current_shape)
         for i in range(len(current_piece_position)):
             x, y = current_piece_position[i]
-            if 20 >= y >= 0:
+            if 0 <= y <= 19:
                 grid[y][x] = current_shape.color
-        # if change_shape == True:
-        #     for pos in current_piece_position:
-        #         p = (pos[0],pos[1])
-        #         locked_positions[p] = current_shape.color
-        #         current_shape = next_shape
-        #         next_shape = get_piece()
-        #         change_shape = False
 
         draw_window(window, grid)
-        draw_next_shape(window,next_shape)
+        draw_next_shape(window, next_shape)
         pygame.display.update()
-
-    pygame.quit()
-
 
 
 
