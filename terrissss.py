@@ -213,20 +213,18 @@ grid = create_grid()
 def clear_rows(grid, locked_positions):
     completed_rows = []
     for i in range(len(grid)):
-        row_completed = True
-        for j in range(len(grid[i])):
-            if grid[i][j] == (0,0,0):
-                row_completed = False
-                break
-            if row_completed:
-                completed_rows.append(i)
+        if all(grid[i][j] != (0, 0, 0) for j in range(len(grid[i]))):
+            completed_rows.append(i)
+
     for row in completed_rows:
         del grid[row]
-        grid.insert(0,[(0,0,0) for i in range(10)])
+        grid.insert(0, [(0, 0, 0) for _ in range(10)])
+
         for pos in list(locked_positions):
-            x,y = pos
+            x, y = pos
             if y == row:
                 del locked_positions[pos]
+
     return grid
 
 
@@ -277,7 +275,7 @@ def main(window):
         if fall_time / 1000 > fall_speed:
             fall_time = 0
             current_shape.y += 1
-
+        
             if not valid_space(current_shape, grid) and current_shape.y > 0:
                 current_shape.y -= 1
                 for pos in draw_shape(current_shape):
