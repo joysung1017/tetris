@@ -277,7 +277,7 @@ def main(window):
         if fall_time / 1000 > fall_speed:
             fall_time = 0
             current_shape.y += 1
-        
+
             if not valid_space(current_shape, grid) and current_shape.y > 0:
                 current_shape.y -= 1
                 for pos in draw_shape(current_shape):
