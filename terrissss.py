@@ -125,9 +125,17 @@ def draw_grid(window, grid):
     for i in range(len(grid)):
         pygame.draw.line(window,
                          (128, 128, 128),
-                         (200, 100 + i * blockSize),
-                         (500, 100 + i * blockSize)
+                         (250, 100 + i * blockSize),
+                         (550, 100 + i * blockSize)
                          )
+
+
+    for j in range(len(grid[0])):
+        pygame.draw.line(window,
+                        (128, 128, 128),
+                        (250 + j * blockSize, 100),
+                        (250 + j * blockSize, 700)
+                        )
 
 # homework: create lines for the columns
 # hint: copy and paste above code and then change the number inside the for loop
@@ -154,6 +162,32 @@ def draw_shape(piece):
         #compare if it equals "0" if it is print ("Hello")
         #['.', '0', '.', '.', '.']
     return positions
+# In the main function, change the offsets for the grid and "Next
+# In the main function, change the offsets for the grid and "Next Shape" text
+def draw_window(window, grid):
+    window.fill((0, 0, 0))
+    draw_grid(window, grid)
+    font = pygame.font.SysFont("comicsans", 30, bold=True)
+    label = font.render("Tetris", 1, (255, 255, 255))
+    window.blit(label, (width // 2 - label.get_width() // 2, 50))
+
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            pygame.draw.rect(
+                window,
+                grid[i][j],
+                (width // 2 - 5 * blockSize + j * blockSize,
+                 100 + i * blockSize,
+                 blockSize,
+                 blockSize),
+                0)
+
+    pygame.draw.rect(window,
+                    (128, 128 ,128),
+                    (width // 2 - 5 * blockSize, 100, 10 * blockSize, 20 * blockSize),
+                    5)
+    draw_grid(window, grid)
+
 
 class Piece(object):
     def __init__(self, x, y, shape):
@@ -164,13 +198,36 @@ class Piece(object):
         self.rotation = 0
 
 
-def create_grid():
+def create_grid(locked_positions = {}):
     grid = [[(0, 0, 0) for _ in range(10)] for _ in range(20)]
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            if (j,i) in locked_positions:
+                c = locked_positions[(j,i)]
+                grid[i][j] = c
     return grid
-
 
 grid = create_grid()
 
+
+def clear_rows(grid, locked_positions):
+    completed_rows = []
+    for i in range(len(grid)):
+        row_completed = True
+        for j in range(len(grid[i])):
+            if grid[i][j] == (0,0,0):
+                row_completed = False
+                break
+            if row_completed:
+                completed_rows.append(i)
+    for row in completed_rows:
+        del grid[row]
+        grid.insert(0,[(0,0,0) for i in range(10)])
+        for pos in list(locked_positions):
+            x,y = pos
+            if y == row:
+                del locked_positions[pos]
+    return grid
 
 
 
@@ -194,34 +251,10 @@ def valid_space(shape, grid):
 
     return True
 
-def draw_window(window, grid):
-    window.fill((0, 0, 0))
-    draw_grid(window, grid)
-    font = pygame.font.SysFont("comicsans", 60, bold=True)
-    label = font.render("Tetris", 1, (255, 255, 255))
-    window.blit(label, (350, 50))
-
-    for i in range(len(grid)):
-        for j in range(len(grid[i])):
-            pygame.draw.rect(
-                window,
-                grid[i][j],
-                (200 + j * blockSize,
-                 100 + i * blockSize,
-                 blockSize,
-                 blockSize),
-                0)
-
-    pygame.draw.rect(window,
-                    (128, 128 ,128),
-                    (200,100,300,600),
-                    5)
-    draw_grid(window, grid)
-
 
 def main(window):
     locked_positions = {}
-    grid = create_grid()
+    grid = create_grid(locked_positions)
     current_shape = get_piece()
     next_shape = get_piece()
 
@@ -230,24 +263,33 @@ def main(window):
     fall_time = 0
     fall_speed = 0.27
     level_time = 0
+
     run = True
-    change_shape = False
-    while (run):
+    while run:
+        grid = create_grid(locked_positions)
         fall_time += clock.get_rawtime()
         level_time += clock.get_rawtime()
         clock.tick()
-        if level_time/ 1000> 5 :
+        if level_time / 1000 > 5:
             level_time = 0
 
             if level_time > 0.12:
                 level_time -= 0.005
-        if fall_time/1000 > fall_speed:
+
+        if fall_time / 1000 > fall_speed:
             fall_time = 0
             current_shape.y += 1
-            if not(valid_space(current_shape, grid)) and current_shape.y > 0:
-                current_shape.y -= 1
-                change_shape = True
 
+            if not valid_space(current_shape, grid):
+                current_shape.y -= 1
+                for pos in draw_shape(current_shape):
+                    p = (pos[0], pos[1])
+                    locked_positions[p] = current_shape.color
+                    current_shape = next_shape
+                    next_shape = get_piece()
+                    break
+
+        grid = clear_rows(grid, locked_positions)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -268,16 +310,20 @@ def main(window):
                         current_shape.x += 1
                 if event.key == pygame.K_RIGHT:
                     current_shape.x += 1
-                    if not(valid_space(current_shape.grid)):
+                    if not(valid_space(current_shape,grid)):
                         current_shape.x -= 1
         current_piece_position = draw_shape(current_shape)
-        if change_shape == True:
-            for pos in current_piece_position:
-                p = (pos[0],pos[1])
-                locked_positions[p] = current_shape.color
-                current_shape = next_shape
-                next_shape = get_piece()
-                change_shape = False
+        for i in range(len(current_piece_position)):
+            x, y = current_piece_position[i]
+            if 20 >= y >= 0:
+                grid[y][x] = current_shape.color
+        # if change_shape == True:
+        #     for pos in current_piece_position:
+        #         p = (pos[0],pos[1])
+        #         locked_positions[p] = current_shape.color
+        #         current_shape = next_shape
+        #         next_shape = get_piece()
+        #         change_shape = False
 
         draw_window(window, grid)
         draw_next_shape(window,next_shape)
@@ -311,7 +357,7 @@ def main_menu(window):
 def draw_next_shape(window, piece):
     font = pygame.font.SysFont("comicsans", 30, bold=True)
     label = font.render("Next Shape", 1, (255, 255, 255))
-    window.blit(label, (650, 50))
+    window.blit(label, (580, 50))
 
     shape = piece.shape
     rotation = piece.rotation
@@ -323,11 +369,13 @@ def draw_next_shape(window, piece):
             if(row[j] == "0"):
                 pygame.draw.rect(window,
                     piece.color,
-                    (530 + j * blockSize,
-                     300 + i * blockSize,
+                    (600 + j * blockSize,
+                     250 + i * blockSize,
                      blockSize,
                      blockSize),
                      0)
+
+        window.blit(label, (570,350))
 
 def draw_text_middle(window):
     font = pygame.font.SysFont("comicsans", 30, bold=True)
